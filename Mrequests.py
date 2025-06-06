@@ -8,6 +8,27 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import re
 from datetime import datetime
+import logging
+import json
+from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (Application, CommandHandler, MessageHandler, filters,
+                          ConversationHandler, ContextTypes, ChatMemberHandler,
+                          CallbackQueryHandler)
+from telegram.error import NetworkError, TelegramError # <--- Added NetworkError and TelegramError imports
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+import tempfile
+import os
+
+
+import re # Import the regular expression module
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN1")
+if not TOKEN:
+    raise ValueError("TELEGRAM_BOT_TOKEN environment variable not set.")
+
 
 # Enable logging
 logging.basicConfig(
@@ -15,18 +36,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 # Google Sheets setup
 # Make sure you have your service account key file named 'service_account_key.json'
 # in the same directory as your script, or provide the correct path.
 # Replace 'YOUR_SERVICE_ACCOUNT_FILE.json' with the actual name of your JSON key file
 try:
+    
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     # Replace 'YOUR_SERVICE_ACCOUNT_FILE.json' with the actual name of your JSON key file
-    creds = ServiceAccountCredentials.from_json_keyfile_name("debo-registration-ad20d23ce5bd.json", scope)
+    creds_json_str = os.environ.get("deboregistration")
+    if not creds_json_str:
+        raise ValueError("GOOGLE_CREDENTIALS_JSON environment variable not set.")
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=".json") as temp_creds_file:
+        temp_creds_file.write(creds_json_str)
+        temp_file_path = temp_creds_file.name
+    creds = ServiceAccountCredentials.from_json_keyfile_name(temp_file_path, scope)
     client = gspread.authorize(creds)
-    # Replace 'requests' with the exact name of your Google Sheet
     sheet = client.open("Requests").sheet1
-    logger.info("Successfully connected to Google Sheet 'Requests'")
+  
 except Exception as e:
     logger.error(f"Error connecting to Google Sheet: {e}")
     sheet = None # Handle the case where sheet connection fails
@@ -289,10 +317,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     # Replace with your new bot token
-    application = Application.builder().token("7985992390:AAHjON8SnDyD2U9ZXp1la24fIgFe8_JS3Ec").build()
-
+    app = Application.builder().token(TOKEN).build()
     # Handler for the /start command
-    application.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("start", start))
 
     # Conversation handler for REQUEST PROFESSIONAL
     request_professional_conv = ConversationHandler(
@@ -318,14 +345,14 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
-    application.add_handler(request_professional_conv)
-    application.add_handler(complaint_comment_conv)
+    app.add_handler(request_professional_conv)
+    app.add_handler(complaint_comment_conv)
 
     # Add a handler for any other text that is not part of a conversation, to show the main menu
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, start))
 
 
-    application.run_polling()
+    app.run_polling()
 
 if __name__ == '__main__':
     main()
