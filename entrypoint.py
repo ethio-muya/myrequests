@@ -30,8 +30,8 @@ def monitor_system():
 
 def run_bot():
     try:
-        logging.info("[BOT] Starting Debo_registration.py")
-        subprocess.run(["python3", "Debo_registration.py"], check=True)
+        logging.info("[BOT] Starting Mrequests.py")
+        subprocess.run(["python3", "Mrequests.py"], check=True)
     except subprocess.CalledProcessError as e:
         logging.error(f"[BOT ERROR] Process failed: {e}")
     except Exception as e:
