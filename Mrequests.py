@@ -25,7 +25,7 @@ import os
 
 
 import re # Import the regular expression module
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN1")
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN2")
 if not TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN environment variable not set.")
 
